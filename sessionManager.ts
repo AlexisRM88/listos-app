@@ -1,4 +1,4 @@
-import { UserProfile } from '../types';
+import { UserProfile } from './types';
 
 const USER_PROFILE_KEY = 'listosAppUserProfile';
 const PRO_STATUS_KEY = 'listosAppIsPro';

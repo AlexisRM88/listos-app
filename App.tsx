@@ -9,11 +9,18 @@ import { redirectToCheckout } from './services/paymentService';
 import { LANGUAGES } from './constants';
 import { LandingPage } from './components/LandingPage';
 import { PricingModal } from './components/PricingModal';
-import * as sessionManager from './services/sessionManager';
+import { SubscriptionBanner } from './components/SubscriptionBanner';
+import { SubscriptionSettings } from './components/SubscriptionSettings';
+import { UsageCounter } from './components/UsageCounter';
+import { AdminPanel } from './components/admin/AdminPanel';
+import * as sessionManager from './sessionManager';
 
 const FREE_GENERATIONS_LIMIT = 2;
 
 const App: React.FC = () => {
+  // Check if we're on admin route
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  
   const [worksheetData, setWorksheetData] = useState<Worksheet | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +32,10 @@ const App: React.FC = () => {
   const [isPro, setIsPro] = useState<boolean>(false);
   const [worksheetCount, setWorksheetCount] = useState<number>(0);
   const [showPricingModal, setShowPricingModal] = useState<boolean>(false);
+  const [showSubscriptionSettings, setShowSubscriptionSettings] = useState<boolean>(false);
   const [showLandingPage, setShowLandingPage] = useState<boolean>(true);
+  const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -112,16 +122,42 @@ const App: React.FC = () => {
 
   const handleUpgrade = async () => {
     if (!userProfile || !userProfile.idToken) {
-        setError("Por favor, inicia sesión para actualizar tu plan.");
+        setPaymentError("Por favor, inicia sesión para actualizar tu plan.");
         return;
     }
-    setShowPricingModal(false);
-    setIsLoading(true);
+    
+    setPaymentProcessing(true);
+    setPaymentError(null);
+    
     const { success, error: checkoutError } = await redirectToCheckout(userProfile.idToken);
+    
     if (!success && checkoutError) {
-      setError(`Error al iniciar el pago: ${checkoutError}`);
+      setPaymentError(checkoutError);
+      setPaymentProcessing(false);
+    } else if (success) {
+      // Payment redirect successful, modal will be closed when user returns
+      setShowPricingModal(false);
+      setPaymentProcessing(false);
     }
-    setIsLoading(false);
+  };
+
+  const handleRetryPayment = () => {
+    setPaymentError(null);
+    handleUpgrade();
+  };
+
+  const handleClosePricingModal = () => {
+    setShowPricingModal(false);
+    setPaymentError(null);
+    setPaymentProcessing(false);
+  };
+
+  const handleManageSubscription = () => {
+    setShowSubscriptionSettings(true);
+  };
+
+  const handleCloseSubscriptionSettings = () => {
+    setShowSubscriptionSettings(false);
   };
 
   const toggleTheme = () => {
@@ -163,6 +199,11 @@ const App: React.FC = () => {
     }
   }, [userProfile, isPro, worksheetCount]);
 
+  // If we're on admin route, show admin panel
+  if (isAdminRoute) {
+    return <AdminPanel onError={setError} />;
+  }
+
   if (showLandingPage || !userProfile) {
     return <LandingPage onLogin={handleLogin} onEnterApp={handleEnterApp} userProfile={userProfile} onError={setError} />;
   }
@@ -171,12 +212,35 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-300 transition-colors duration-300">
       <Header theme={theme} toggleTheme={toggleTheme} userProfile={userProfile} onLogout={handleLogout} />
       
-      {showPricingModal && <PricingModal onClose={() => setShowPricingModal(false)} language={language} onUpgrade={handleUpgrade} />}
+      {showPricingModal && (
+        <PricingModal 
+          onClose={handleClosePricingModal} 
+          language={language} 
+          onUpgrade={handleUpgrade}
+          isProcessing={paymentProcessing}
+          error={paymentError}
+          onRetry={handleRetryPayment}
+        />
+      )}
+
+      {showSubscriptionSettings && (
+        <SubscriptionSettings
+          userProfile={userProfile}
+          language={language}
+          onClose={handleCloseSubscriptionSettings}
+          onUpgrade={handleUpgrade}
+        />
+      )}
 
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4 xl:col-span-3">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-4">
+              <UsageCounter 
+                userProfile={userProfile}
+                language={language}
+                onUpgrade={() => setShowPricingModal(true)}
+              />
               <InputForm 
                 onGenerate={handleGenerate} 
                 isLoading={isLoading} 
@@ -188,6 +252,12 @@ const App: React.FC = () => {
 
           <div className="lg:col-span-8 xl:col-span-9">
             {error && <ErrorAlert message={error} onClose={() => setError(null)} language={language} />}
+            <SubscriptionBanner 
+              userProfile={userProfile}
+              language={language}
+              onUpgrade={handleUpgrade}
+              onManageSubscription={handleManageSubscription}
+            />
             <WorksheetDisplay 
               data={worksheetData}
               isLoading={isLoading}
@@ -206,6 +276,8 @@ const App: React.FC = () => {
               <a href="https://www.buenturno.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Buenturno.com</a>
               <span className="text-slate-400 dark:text-slate-600">|</span>
               <a href="https://www.cabuyacreativa.com" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors">CabuyaCreativa.com</a>
+              <span className="text-slate-400 dark:text-slate-600">|</span>
+              <a href="/admin" className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Admin</a>
           </div>
           <p className="mt-4">
               {language === 'Inglés' 
