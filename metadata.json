@@ -1,0 +1,6 @@
+{
+  "name": "1.ListosApp: Creador de Hojas de Trabajo",
+  "description": "Un asistente impulsado por IA para generar hojas de trabajo educativas personalizadas. Adapte el contenido por idioma, grado, dificultad, tipo de ejercicio y cantidad para crear materiales de aprendizaje atractivos en segundos.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
