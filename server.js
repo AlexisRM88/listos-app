@@ -12,11 +12,20 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 // Configuración
+console.log('🔧 Iniciando configuración...');
 dotenv.config();
+console.log('✅ dotenv configurado');
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 8080;
+
+console.log(`🔧 __dirname: ${__dirname}`);
+console.log(`🔧 PORT: ${PORT}`);
+console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV}`);
+
 const app = express();
+console.log('✅ Express app creada');
 
 // Importar servicios y rutas de forma segura
 let databaseService;
@@ -121,7 +130,14 @@ app.get('/health', (req, res) => {
 
 // Servir la aplicación React para cualquier otra ruta (incluyendo rutas de admin)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  try {
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    console.log(`📁 Intentando servir: ${indexPath}`);
+    res.sendFile(indexPath);
+  } catch (error) {
+    console.error('❌ Error al servir index.html:', error);
+    res.status(500).send('Error interno del servidor');
+  }
 });
 
 // Manejo de errores no capturados
