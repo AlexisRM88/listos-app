@@ -124,8 +124,25 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+  console.error('❌ Excepción no capturada:', error);
+  // No cerrar el proceso, solo loggear
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Promesa rechazada no manejada:', reason);
+  // No cerrar el proceso, solo loggear
+});
+
 // Iniciar servidor
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor iniciado en http://0.0.0.0:${PORT}`);
   console.log(`📊 Health check disponible en http://0.0.0.0:${PORT}/health`);
+  console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`🔧 PORT: ${process.env.PORT}`);
+});
+
+server.on('error', (error) => {
+  console.error('❌ Error del servidor:', error);
 });
