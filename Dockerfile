@@ -1,5 +1,6 @@
 # Usar imagen base de Node.js con Debian (incluye bash)
 FROM node:18
+# Force rebuild - timestamp: 2025-01-22
 
 # Crear directorio de trabajo
 WORKDIR /app
