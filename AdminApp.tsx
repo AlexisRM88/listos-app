@@ -5,9 +5,12 @@
  * Punto de entrada para el panel de administración de ListosApp.
  */
 
-import React, { useState, useEffect } from 'react';
-import { AdminPanel } from './components/admin/AdminPanel';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ErrorAlert } from './components/ErrorAlert';
+import { LoadingSpinner } from './components/LoadingSpinner';
+
+// Lazy loaded components
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel').then(module => ({ default: module.AdminPanel })));
 
 const AdminApp: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,9 @@ const AdminApp: React.FC = () => {
         </div>
       )}
       
-      <AdminPanel onError={setError} />
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner size="large" /></div>}>
+        <AdminPanel onError={setError} />
+      </Suspense>
     </div>
   );
 };

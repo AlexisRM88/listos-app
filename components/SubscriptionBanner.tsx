@@ -15,13 +15,15 @@ interface SubscriptionBannerProps {
   language: string;
   onUpgrade: () => void;
   onManageSubscription?: () => void;
+  documentGenerated?: number; // Counter that increments when a document is generated
 }
 
 export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
   userProfile,
   language,
   onUpgrade,
-  onManageSubscription
+  onManageSubscription,
+  documentGenerated = 0
 }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +73,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
           setError(result.error || T.errorLoading);
         }
       } catch (err) {
+        console.error('Error loading subscription status:', err);
         setError(T.errorLoading);
       } finally {
         setIsLoading(false);
@@ -78,11 +81,42 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     };
 
     loadSubscriptionStatus();
+    
+    // Configurar intervalo para actualizar el estado cada 5 minutos
+    // Esto asegura que los cambios en la suscripción se reflejen sin recargar la página
+    const intervalId = setInterval(loadSubscriptionStatus, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, [userProfile?.idToken, T.errorLoading]);
+  
+  // Actualizar cuando se genera un nuevo documento
+  useEffect(() => {
+    if (documentGenerated > 0 && userProfile?.idToken) {
+      const updateAfterGeneration = async () => {
+        try {
+          const result = await subscriptionClientService.getSubscriptionStatus(userProfile.idToken);
+          if (result.success && result.data) {
+            setSubscriptionStatus(result.data);
+          }
+        } catch (err) {
+          console.error('Error updating subscription after document generation:', err);
+          // No mostramos error aquí para no interrumpir la experiencia del usuario
+        }
+      };
+      
+      // Pequeño retraso para asegurar que el servidor ha procesado el nuevo documento
+      const timeoutId = setTimeout(updateAfterGeneration, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [documentGenerated, userProfile?.idToken]);
 
   // Manejar reactivación de suscripción
   const handleReactivate = async () => {
     if (!userProfile?.idToken) return;
+    
+    // Mostrar estado de carga durante la reactivación
+    setIsLoading(true);
+    setError(null);
     
     try {
       const result = await subscriptionClientService.reactivateSubscription(userProfile.idToken);
@@ -91,12 +125,39 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
         const statusResult = await subscriptionClientService.getSubscriptionStatus(userProfile.idToken);
         if (statusResult.success && statusResult.data) {
           setSubscriptionStatus(statusResult.data);
+        } else {
+          setError(statusResult.error || 'Error al verificar estado de suscripción');
         }
       } else {
-        setError(result.error || 'Error al reactivar');
+        setError(result.error || 'Error al reactivar la suscripción');
       }
     } catch (err) {
-      setError('Error al reactivar la suscripción');
+      console.error('Error reactivating subscription:', err);
+      setError('Error al reactivar la suscripción. Por favor, intenta nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Función para reintentar cargar el estado de suscripción
+  const handleRetry = async () => {
+    if (!userProfile?.idToken) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await subscriptionClientService.getSubscriptionStatus(userProfile.idToken);
+      if (result.success && result.data) {
+        setSubscriptionStatus(result.data);
+      } else {
+        setError(result.error || T.errorLoading);
+      }
+    } catch (err) {
+      console.error('Error retrying subscription status load:', err);
+      setError(T.errorLoading);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,13 +173,21 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     );
   }
 
-  // Mostrar error
+  // Mostrar error con opción de reintentar
   if (error) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="text-red-500">⚠️</div>
-          <span className="text-red-700 dark:text-red-300">{error}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="text-red-500">⚠️</div>
+            <span className="text-red-700 dark:text-red-300">{error}</span>
+          </div>
+          <button 
+            onClick={handleRetry}
+            className="text-xs text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 underline"
+          >
+            {isSpanish ? 'Reintentar' : 'Retry'}
+          </button>
         </div>
       </div>
     );

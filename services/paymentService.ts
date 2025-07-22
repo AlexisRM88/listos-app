@@ -1,6 +1,7 @@
 
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import config from '../config';
+import errorHandlingService, { ErrorType } from './errorHandlingService';
 
 // Cache para la instancia de Stripe
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -49,29 +50,35 @@ interface ServerErrorResponse {
  * @returns An object indicating success or failure, with an optional error message.
  */
 export const redirectToCheckout = async (idToken: string): Promise<CheckoutResult> => {
-  // 1. Validate frontend configuration
-  const validationError = validateConfiguration();
-  if (validationError) {
-    return validationError;
-  }
-
-  try {
-    // 2. Create checkout session
-    const sessionResult = await createCheckoutSession(idToken);
-    if (!sessionResult.success) {
-      return sessionResult;
+  return errorHandlingService.withRetry(async () => {
+    // 1. Validate frontend configuration
+    const validationError = validateConfiguration();
+    if (validationError) {
+      return validationError;
     }
 
-    // 3. Redirect to Stripe's hosted checkout page
-    return await redirectToStripeCheckout(sessionResult.sessionId!);
+    try {
+      // 2. Create checkout session
+      const sessionResult = await createCheckoutSession(idToken);
+      if (!sessionResult.success) {
+        return sessionResult;
+      }
 
-  } catch (error) {
-    console.error('Error en el proceso de checkout:', error);
-    return {
-      success: false,
-      error: getErrorMessage(error)
-    };
-  }
+      // 3. Redirect to Stripe's hosted checkout page
+      return await redirectToStripeCheckout(sessionResult.sessionId!);
+
+    } catch (error) {
+      const formattedError = errorHandlingService.formatError(error);
+      console.error('Error en el proceso de checkout:', formattedError);
+      return {
+        success: false,
+        error: errorHandlingService.getUserFriendlyMessage(error)
+      };
+    }
+  }, { 
+    maxRetries: 2,
+    initialDelayMs: 500
+  });
 };
 
 /**
@@ -105,48 +112,57 @@ const validateConfiguration = (): CheckoutResult | null => {
  */
 const createCheckoutSession = async (idToken: string): Promise<CheckoutResult> => {
   try {
-    const proxyResponse = await fetch(config.stripeProxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`,
-      },
-    });
-
-    if (!proxyResponse.ok) {
-      const errorData: ServerErrorResponse = await proxyResponse.json()
-        .catch(() => ({ error: 'Respuesta de error no es JSON' }));
+    // Importar el servicio de red de forma dinámica para evitar problemas de dependencia circular
+    const networkService = await import('./networkService').then(module => module.default);
+    
+    try {
+      // Usar el servicio de red con reintentos automáticos
+      const responseData = await networkService.post<CheckoutSessionResponse>(
+        config.stripeProxyUrl,
+        {}, // No necesitamos enviar datos en el cuerpo
+        {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+          retryOptions: {
+            maxRetries: 2,
+            initialDelayMs: 500
+          }
+        }
+      );
       
-      // Manejo específico de códigos de estado HTTP
-      switch (proxyResponse.status) {
-        case 400:
-          return { success: false, error: errorData.error || 'Solicitud inválida' };
-        case 401:
+      if (!responseData.sessionId) {
+        return { success: false, error: "No se recibió un ID de sesión del servidor." };
+      }
+
+      return { success: true, sessionId: responseData.sessionId };
+    } catch (error) {
+      // El error ya ha sido formateado por networkService
+      const formattedError = errorHandlingService.formatError(error);
+      
+      // Personalizar mensajes según el tipo de error
+      switch (formattedError.type) {
+        case ErrorType.AUTHENTICATION:
           return { success: false, error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' };
-        case 429:
-          return { success: false, error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' };
-        case 500:
+        case ErrorType.NETWORK:
+          return { 
+            success: false, 
+            error: 'Error de red: No se pudo conectar con el servidor de pagos. Verifica tu conexión a internet.' 
+          };
+        case ErrorType.SERVER:
           return { success: false, error: 'Error interno del servidor. Intenta más tarde.' };
         default:
-          return { success: false, error: errorData.error || `Error del servidor (${proxyResponse.status})` };
+          return { success: false, error: formattedError.userMessage };
       }
     }
-
-    const responseData: CheckoutSessionResponse = await proxyResponse.json();
-    if (!responseData.sessionId) {
-      return { success: false, error: "No se recibió un ID de sesión del servidor." };
-    }
-
-    return { success: true, sessionId: responseData.sessionId };
-
   } catch (error) {
-    if (error instanceof TypeError) {
-      return { 
-        success: false, 
-        error: 'Error de red: No se pudo conectar con el servidor de pagos. Verifica tu conexión a internet.' 
-      };
-    }
-    throw error;
+    // Manejar errores inesperados
+    const formattedError = errorHandlingService.formatError(error);
+    console.error('Error inesperado al crear sesión de checkout:', formattedError);
+    return { 
+      success: false, 
+      error: errorHandlingService.getUserFriendlyMessage(error)
+    };
   }
 };
 
@@ -212,22 +228,32 @@ const getErrorMessage = (error: unknown): string => {
  */
 export const getCheckoutSessionStatus = async (sessionId: string): Promise<{ success: boolean; status?: string; error?: string }> => {
   try {
-    const response = await fetch(`/api/stripe/session/${sessionId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return { success: false, error: 'No se pudo verificar el estado del pago' };
+    // Importar el servicio de red de forma dinámica para evitar problemas de dependencia circular
+    const networkService = await import('./networkService').then(module => module.default);
+    
+    try {
+      // Usar el servicio de red con reintentos automáticos
+      const data = await networkService.get(`/api/stripe/session/${sessionId}`, {
+        retryOptions: { maxRetries: 3 }
+      });
+      
+      return { success: true, status: data.status };
+    } catch (error) {
+      const formattedError = errorHandlingService.formatError(error);
+      console.error('Error al verificar estado de sesión:', formattedError);
+      return { 
+        success: false, 
+        error: errorHandlingService.getUserFriendlyMessage(error)
+      };
     }
-
-    const data = await response.json();
-    return { success: true, status: data.status };
-
   } catch (error) {
-    return { success: false, error: 'Error al verificar el estado del pago' };
+    // Manejar errores inesperados
+    const formattedError = errorHandlingService.formatError(error);
+    console.error('Error inesperado al verificar estado de sesión:', formattedError);
+    return { 
+      success: false, 
+      error: errorHandlingService.getUserFriendlyMessage(error)
+    };
   }
 };
 
@@ -250,22 +276,32 @@ export const getPricingConfig = async (): Promise<{
   error?: string;
 }> => {
   try {
-    const response = await fetch('/api/stripe/config', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return { success: false, error: 'No se pudo obtener la configuración de precios' };
+    // Importar el servicio de red de forma dinámica para evitar problemas de dependencia circular
+    const networkService = await import('./networkService').then(module => module.default);
+    
+    try {
+      // Usar el servicio de red con reintentos automáticos
+      const config = await networkService.get('/api/stripe/config', {
+        retryOptions: { maxRetries: 3 }
+      });
+      
+      return { success: true, config };
+    } catch (error) {
+      const formattedError = errorHandlingService.formatError(error);
+      console.error('Error al obtener configuración de precios:', formattedError);
+      return { 
+        success: false, 
+        error: errorHandlingService.getUserFriendlyMessage(error)
+      };
     }
-
-    const config = await response.json();
-    return { success: true, config };
-
   } catch (error) {
-    return { success: false, error: 'Error al obtener la configuración de precios' };
+    // Manejar errores inesperados
+    const formattedError = errorHandlingService.formatError(error);
+    console.error('Error inesperado al obtener configuración de precios:', formattedError);
+    return { 
+      success: false, 
+      error: errorHandlingService.getUserFriendlyMessage(error)
+    };
   }
 };
 
@@ -280,29 +316,43 @@ export const cancelSubscription = async (idToken: string): Promise<{
   cancelAt?: string;
 }> => {
   try {
-    const response = await fetch('/api/stripe/cancel-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-      return { success: false, error: errorData.error };
+    // Importar el servicio de red de forma dinámica para evitar problemas de dependencia circular
+    const networkService = await import('./networkService').then(module => module.default);
+    
+    try {
+      // Usar el servicio de red con reintentos automáticos
+      const data = await networkService.post('/api/stripe/cancel-subscription', 
+        {}, // No necesitamos enviar datos en el cuerpo
+        {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+          retryOptions: {
+            maxRetries: 2,
+            initialDelayMs: 800
+          }
+        }
+      );
+      
+      return { 
+        success: true, 
+        cancelAt: data.cancelAt 
+      };
+    } catch (error) {
+      const formattedError = errorHandlingService.formatError(error);
+      console.error('Error al cancelar suscripción:', formattedError);
+      return { 
+        success: false, 
+        error: errorHandlingService.getUserFriendlyMessage(error)
+      };
     }
-
-    const data = await response.json();
-    return { 
-      success: true, 
-      cancelAt: data.cancelAt 
-    };
-
   } catch (error) {
+    // Manejar errores inesperados
+    const formattedError = errorHandlingService.formatError(error);
+    console.error('Error inesperado al cancelar suscripción:', formattedError);
     return { 
       success: false, 
-      error: 'Error al cancelar la suscripción' 
+      error: errorHandlingService.getUserFriendlyMessage(error)
     };
   }
 };

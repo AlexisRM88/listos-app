@@ -11,6 +11,7 @@ import { UserProfile, UserWithSubscription } from '../types';
 import authService from './authService';
 import userService from './userService';
 import databaseService from './databaseService.js';
+import errorHandlingService from './errorHandlingService';
 
 // Constantes para almacenamiento local
 const SESSION_SYNC_TIMESTAMP_KEY = 'listosAppLastSync';
@@ -41,47 +42,50 @@ class SessionManager {
    * @returns Datos de sesión del usuario
    */
   async loadSession(): Promise<SessionData> {
-    try {
-      // Verificar si hay un usuario autenticado
-      if (!authService.isAuthenticated()) {
+    return errorHandlingService.withRetry(async () => {
+      try {
+        // Verificar si hay un usuario autenticado
+        if (!authService.isAuthenticated()) {
+          return { userProfile: null, isPro: false, worksheetCount: 0 };
+        }
+        
+        // Obtener token de autenticación
+        const token = authService.getAuthToken();
+        if (!token) {
+          return { userProfile: null, isPro: false, worksheetCount: 0 };
+        }
+        
+        // Decodificar token para obtener ID de usuario
+        const decodedToken = this.decodeJwt(token);
+        if (!decodedToken || !decodedToken.sub) {
+          return { userProfile: null, isPro: false, worksheetCount: 0 };
+        }
+        
+        const userId = decodedToken.sub;
+        
+        // Obtener perfil de usuario con suscripción
+        const userProfile = await userService.getUserProfile(userId);
+        if (!userProfile) {
+          return { userProfile: null, isPro: false, worksheetCount: 0 };
+        }
+        
+        // Obtener contador de hojas de trabajo
+        const user = await userService.getUserById(userId);
+        const worksheetCount = user?.worksheet_count || 0;
+        
+        // Determinar si el usuario es Pro
+        const isPro = !!userProfile.subscription;
+        
+        // Iniciar sincronización periódica
+        this.startSyncInterval(userId);
+        
+        return { userProfile, isPro, worksheetCount };
+      } catch (error) {
+        const formattedError = errorHandlingService.formatError(error);
+        console.error('Error al cargar sesión:', formattedError);
         return { userProfile: null, isPro: false, worksheetCount: 0 };
       }
-      
-      // Obtener token de autenticación
-      const token = authService.getAuthToken();
-      if (!token) {
-        return { userProfile: null, isPro: false, worksheetCount: 0 };
-      }
-      
-      // Decodificar token para obtener ID de usuario
-      const decodedToken = this.decodeJwt(token);
-      if (!decodedToken || !decodedToken.sub) {
-        return { userProfile: null, isPro: false, worksheetCount: 0 };
-      }
-      
-      const userId = decodedToken.sub;
-      
-      // Obtener perfil de usuario con suscripción
-      const userProfile = await userService.getUserProfile(userId);
-      if (!userProfile) {
-        return { userProfile: null, isPro: false, worksheetCount: 0 };
-      }
-      
-      // Obtener contador de hojas de trabajo
-      const user = await userService.getUserById(userId);
-      const worksheetCount = user?.worksheet_count || 0;
-      
-      // Determinar si el usuario es Pro
-      const isPro = !!userProfile.subscription;
-      
-      // Iniciar sincronización periódica
-      this.startSyncInterval(userId);
-      
-      return { userProfile, isPro, worksheetCount };
-    } catch (error) {
-      console.error('Error al cargar sesión:', error);
-      return { userProfile: null, isPro: false, worksheetCount: 0 };
-    }
+    }, { maxRetries: 2 });
   }
   
   /**
@@ -90,24 +94,27 @@ class SessionManager {
    * @returns Estado Pro y contador de hojas del usuario
    */
   async saveSession(user: UserProfile): Promise<{ isPro: boolean, worksheetCount: number }> {
-    try {
-      // Crear o actualizar usuario en la base de datos
-      await userService.createOrUpdateUser(user);
-      
-      // Migrar datos de localStorage si existen
-      await userService.migrateUserDataFromLocalStorage(user.id);
-      
-      // Cargar datos actualizados
-      const { isPro, worksheetCount } = await this.loadSession();
-      
-      // Iniciar sincronización periódica
-      this.startSyncInterval(user.id);
-      
-      return { isPro, worksheetCount };
-    } catch (error) {
-      console.error('Error al guardar sesión:', error);
-      return { isPro: false, worksheetCount: 0 };
-    }
+    return errorHandlingService.withRetry(async () => {
+      try {
+        // Crear o actualizar usuario en la base de datos
+        await userService.createOrUpdateUser(user);
+        
+        // Migrar datos de localStorage si existen
+        await userService.migrateUserDataFromLocalStorage(user.id);
+        
+        // Cargar datos actualizados
+        const { isPro, worksheetCount } = await this.loadSession();
+        
+        // Iniciar sincronización periódica
+        this.startSyncInterval(user.id);
+        
+        return { isPro, worksheetCount };
+      } catch (error) {
+        const formattedError = errorHandlingService.formatError(error);
+        console.error('Error al guardar sesión:', formattedError);
+        return { isPro: false, worksheetCount: 0 };
+      }
+    }, { maxRetries: 3, initialDelayMs: 300 });
   }
   
   /**
@@ -128,43 +135,46 @@ class SessionManager {
    * @returns Nuevo estado Pro
    */
   async setUserAsPro(userId: string, isPro: boolean): Promise<boolean> {
-    try {
-      if (isPro) {
-        // Crear suscripción si no existe
-        const subscription = await this.db('subscriptions')
-          .where({ 
-            user_id: userId,
-            status: 'active'
-          })
-          .first();
-          
-        if (!subscription) {
-          await this.db('subscriptions').insert({
-            user_id: userId,
-            status: 'active',
-            created_at: this.db.fn.now(),
-            plan: 'pro',
-            cancel_at_period_end: false
-          });
+    return errorHandlingService.withRetry(async () => {
+      try {
+        if (isPro) {
+          // Crear suscripción si no existe
+          const subscription = await this.db('subscriptions')
+            .where({ 
+              user_id: userId,
+              status: 'active'
+            })
+            .first();
+            
+          if (!subscription) {
+            await this.db('subscriptions').insert({
+              user_id: userId,
+              status: 'active',
+              created_at: this.db.fn.now(),
+              plan: 'pro',
+              cancel_at_period_end: false
+            });
+          }
+        } else {
+          // Cancelar suscripciones activas
+          await this.db('subscriptions')
+            .where({ 
+              user_id: userId,
+              status: 'active'
+            })
+            .update({ 
+              status: 'canceled',
+              cancel_at_period_end: true
+            });
         }
-      } else {
-        // Cancelar suscripciones activas
-        await this.db('subscriptions')
-          .where({ 
-            user_id: userId,
-            status: 'active'
-          })
-          .update({ 
-            status: 'canceled',
-            cancel_at_period_end: true
-          });
+        
+        return isPro;
+      } catch (error) {
+        const formattedError = errorHandlingService.formatError(error);
+        console.error('Error al actualizar estado Pro:', formattedError);
+        throw formattedError; // Propagar el error formateado para que el llamador pueda manejarlo
       }
-      
-      return isPro;
-    } catch (error) {
-      console.error('Error al actualizar estado Pro:', error);
-      return false;
-    }
+    }, { maxRetries: 2 });
   }
   
   /**
@@ -173,7 +183,9 @@ class SessionManager {
    * @returns Nuevo contador
    */
   async incrementWorksheetCount(userId: string): Promise<number> {
-    return await userService.incrementWorksheetCount(userId);
+    return errorHandlingService.withRetry(async () => {
+      return await userService.incrementWorksheetCount(userId);
+    }, { maxRetries: 2 });
   }
   
   /**
@@ -181,24 +193,32 @@ class SessionManager {
    * @param userId - ID del usuario
    */
   private async syncSessionState(userId: string): Promise<void> {
-    try {
-      // Actualizar timestamp de última sincronización
-      localStorage.setItem(SESSION_SYNC_TIMESTAMP_KEY, Date.now().toString());
-      
-      // Obtener perfil actualizado
-      const userProfile = await userService.getUserProfile(userId);
-      
-      // Si el usuario ya no existe o no está autenticado, limpiar sesión
-      if (!userProfile || !authService.isAuthenticated()) {
-        this.clearSession();
-        return;
+    return errorHandlingService.withRetry(async () => {
+      try {
+        // Actualizar timestamp de última sincronización
+        localStorage.setItem(SESSION_SYNC_TIMESTAMP_KEY, Date.now().toString());
+        
+        // Obtener perfil actualizado
+        const userProfile = await userService.getUserProfile(userId);
+        
+        // Si el usuario ya no existe o no está autenticado, limpiar sesión
+        if (!userProfile || !authService.isAuthenticated()) {
+          this.clearSession();
+          return;
+        }
+        
+        // No es necesario hacer nada más, ya que los datos se obtienen directamente
+        // de la base de datos cuando se necesitan
+      } catch (error) {
+        const formattedError = errorHandlingService.formatError(error);
+        console.error('Error al sincronizar estado de sesión:', formattedError);
+        throw formattedError;
       }
-      
-      // No es necesario hacer nada más, ya que los datos se obtienen directamente
-      // de la base de datos cuando se necesitan
-    } catch (error) {
-      console.error('Error al sincronizar estado de sesión:', error);
-    }
+    }, { 
+      maxRetries: 3, 
+      initialDelayMs: 1000, // Mayor retraso inicial para sincronización en segundo plano
+      backoffFactor: 1.5 
+    });
   }
   
   /**
@@ -252,13 +272,20 @@ class SessionManager {
    * @param userId - ID del usuario
    */
   async handleDataConflicts(userId: string): Promise<void> {
-    try {
-      // En caso de conflicto, la base de datos siempre tiene prioridad
-      // Simplemente sincronizamos el estado actual
-      await this.syncSessionState(userId);
-    } catch (error) {
-      console.error('Error al manejar conflictos de datos:', error);
-    }
+    return errorHandlingService.withRetry(async () => {
+      try {
+        // En caso de conflicto, la base de datos siempre tiene prioridad
+        // Simplemente sincronizamos el estado actual
+        await this.syncSessionState(userId);
+      } catch (error) {
+        const formattedError = errorHandlingService.formatError(error);
+        console.error('Error al manejar conflictos de datos:', formattedError);
+        throw formattedError;
+      }
+    }, { 
+      maxRetries: 2,
+      initialDelayMs: 800
+    });
   }
 }
 

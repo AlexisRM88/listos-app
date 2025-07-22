@@ -170,7 +170,20 @@ class DatabaseService {
    */
   async getUserById(userId) {
     try {
-      return await db('users').where('id', userId).first();
+      // Optimización: Seleccionar solo las columnas necesarias
+      return await db('users')
+        .select(
+          'id',
+          'email',
+          'name',
+          'picture',
+          'role',
+          'worksheet_count',
+          'created_at',
+          'last_login'
+        )
+        .where('id', userId)
+        .first();
     } catch (error) {
       console.error('Error al obtener usuario:', error);
       throw error;
@@ -186,7 +199,19 @@ class DatabaseService {
    */
   async getActiveSubscription(userId) {
     try {
+      // Optimización: Seleccionar solo las columnas necesarias
       return await db('subscriptions')
+        .select(
+          'id',
+          'user_id',
+          'status',
+          'stripe_customer_id',
+          'stripe_subscription_id',
+          'current_period_end',
+          'cancel_at_period_end',
+          'plan',
+          'price_id'
+        )
         .where('user_id', userId)
         .where('status', 'active')
         .where('current_period_end', '>', db.fn.now())
@@ -312,9 +337,10 @@ class DatabaseService {
    */
   async getUserUsageCount(userId) {
     try {
+      // Optimización: Usar índice en user_id para mejorar rendimiento
       const result = await db('usage')
         .where('user_id', userId)
-        .count('* as count')
+        .count('id as count')  // Contar solo la columna id es más eficiente
         .first();
 
       return parseInt(result.count) || 0;

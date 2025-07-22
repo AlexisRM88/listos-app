@@ -10,6 +10,9 @@ import { UserWithSubscription } from '../../types';
 import { AdminAuth } from './AdminAuth';
 import { AdminLayout } from './AdminLayout';
 import { AdminRoute } from './AdminRoute';
+import { SubscriptionManagement } from './SubscriptionManagement';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { UserManagement } from './UserManagement';
 import authService from '../../services/authService';
 
 interface AdminPanelProps {
@@ -114,40 +117,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onError }) => {
         );
       
       case 'users':
-        return (
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Gestión de Usuarios
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Esta sección estará disponible en la siguiente fase de implementación.
-            </p>
-          </div>
-        );
+        return <UserManagement onError={onError} />;
       
       case 'subscriptions':
-        return (
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Gestión de Suscripciones
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Esta sección estará disponible en la siguiente fase de implementación.
-            </p>
-          </div>
-        );
+        return <SubscriptionManagement onError={onError} />;
       
       case 'analytics':
-        return (
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Análisis y Métricas
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Esta sección estará disponible en la siguiente fase de implementación.
-            </p>
-          </div>
-        );
+        return <AnalyticsDashboard onError={onError} />;
       
       default:
         return null;

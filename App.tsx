@@ -1,19 +1,22 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { InputForm } from './components/InputForm';
-import { WorksheetDisplay } from './components/WorksheetDisplay';
+import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { ErrorAlert } from './components/ErrorAlert';
 import { Header } from './components/Header';
 import { Worksheet, FormState, UserProfile } from './types';
 import { generateWorksheet } from './services/geminiService';
 import { redirectToCheckout } from './services/paymentService';
 import { LANGUAGES } from './constants';
-import { LandingPage } from './components/LandingPage';
-import { PricingModal } from './components/PricingModal';
-import { SubscriptionBanner } from './components/SubscriptionBanner';
-import { SubscriptionSettings } from './components/SubscriptionSettings';
-import { UsageCounter } from './components/UsageCounter';
-import { AdminPanel } from './components/admin/AdminPanel';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import * as sessionManager from './sessionManager';
+
+// Lazy loaded components
+const InputForm = lazy(() => import('./components/InputForm').then(module => ({ default: module.InputForm })));
+const WorksheetDisplay = lazy(() => import('./components/WorksheetDisplay').then(module => ({ default: module.WorksheetDisplay })));
+const LandingPage = lazy(() => import('./components/LandingPage').then(module => ({ default: module.LandingPage })));
+const PricingModal = lazy(() => import('./components/PricingModal').then(module => ({ default: module.PricingModal })));
+const SubscriptionBanner = lazy(() => import('./components/SubscriptionBanner').then(module => ({ default: module.SubscriptionBanner })));
+const SubscriptionSettings = lazy(() => import('./components/SubscriptionSettings').then(module => ({ default: module.SubscriptionSettings })));
+const UsageCounter = lazy(() => import('./components/UsageCounter').then(module => ({ default: module.UsageCounter })));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel').then(module => ({ default: module.AdminPanel })));
 
 const FREE_GENERATIONS_LIMIT = 2;
 
@@ -201,11 +204,19 @@ const App: React.FC = () => {
 
   // If we're on admin route, show admin panel
   if (isAdminRoute) {
-    return <AdminPanel onError={setError} />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner size="large" /></div>}>
+        <AdminPanel onError={setError} />
+      </Suspense>
+    );
   }
 
   if (showLandingPage || !userProfile) {
-    return <LandingPage onLogin={handleLogin} onEnterApp={handleEnterApp} userProfile={userProfile} onError={setError} />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner size="large" /></div>}>
+        <LandingPage onLogin={handleLogin} onEnterApp={handleEnterApp} userProfile={userProfile} onError={setError} />
+      </Suspense>
+    );
   }
 
   return (
@@ -213,59 +224,71 @@ const App: React.FC = () => {
       <Header theme={theme} toggleTheme={toggleTheme} userProfile={userProfile} onLogout={handleLogout} />
       
       {showPricingModal && (
-        <PricingModal 
-          onClose={handleClosePricingModal} 
-          language={language} 
-          onUpgrade={handleUpgrade}
-          isProcessing={paymentProcessing}
-          error={paymentError}
-          onRetry={handleRetryPayment}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"><LoadingSpinner size="medium" /></div>}>
+          <PricingModal 
+            onClose={handleClosePricingModal} 
+            language={language} 
+            onUpgrade={handleUpgrade}
+            isProcessing={paymentProcessing}
+            error={paymentError}
+            onRetry={handleRetryPayment}
+          />
+        </Suspense>
       )}
 
       {showSubscriptionSettings && (
-        <SubscriptionSettings
-          userProfile={userProfile}
-          language={language}
-          onClose={handleCloseSubscriptionSettings}
-          onUpgrade={handleUpgrade}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"><LoadingSpinner size="medium" /></div>}>
+          <SubscriptionSettings
+            userProfile={userProfile}
+            language={language}
+            onClose={handleCloseSubscriptionSettings}
+            onUpgrade={handleUpgrade}
+          />
+        </Suspense>
       )}
 
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4 xl:col-span-3">
             <div className="sticky top-24 space-y-4">
-              <UsageCounter 
-                userProfile={userProfile}
-                language={language}
-                onUpgrade={() => setShowPricingModal(true)}
-              />
-              <InputForm 
-                onGenerate={handleGenerate} 
-                isLoading={isLoading} 
-                isPro={isPro}
-                remainingGenerations={Math.max(0, FREE_GENERATIONS_LIMIT - worksheetCount)}
-              />
+              <Suspense fallback={<div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow"><LoadingSpinner size="small" /></div>}>
+                <UsageCounter 
+                  userProfile={userProfile}
+                  language={language}
+                  onUpgrade={() => setShowPricingModal(true)}
+                />
+              </Suspense>
+              <Suspense fallback={<div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow"><LoadingSpinner size="small" /></div>}>
+                <InputForm 
+                  onGenerate={handleGenerate} 
+                  isLoading={isLoading} 
+                  isPro={isPro}
+                  remainingGenerations={Math.max(0, FREE_GENERATIONS_LIMIT - worksheetCount)}
+                />
+              </Suspense>
             </div>
           </div>
 
           <div className="lg:col-span-8 xl:col-span-9">
             {error && <ErrorAlert message={error} onClose={() => setError(null)} language={language} />}
-            <SubscriptionBanner 
-              userProfile={userProfile}
-              language={language}
-              onUpgrade={handleUpgrade}
-              onManageSubscription={handleManageSubscription}
-            />
-            <WorksheetDisplay 
-              data={worksheetData}
-              isLoading={isLoading}
-              showAsJson={showAsJson}
-              language={language}
-              teacherName={formSnapshot.teacherName}
-              schoolName={formSnapshot.schoolName}
-            />
+            <Suspense fallback={<div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow mb-4"><LoadingSpinner size="small" /></div>}>
+              <SubscriptionBanner 
+                userProfile={userProfile}
+                language={language}
+                onUpgrade={handleUpgrade}
+                onManageSubscription={handleManageSubscription}
+              />
+            </Suspense>
+            <Suspense fallback={<div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow"><LoadingSpinner size="medium" /></div>}>
+              <WorksheetDisplay 
+                data={worksheetData}
+                isLoading={isLoading}
+                showAsJson={showAsJson}
+                language={language}
+                teacherName={formSnapshot.teacherName}
+                schoolName={formSnapshot.schoolName}
+              />
+            </Suspense>
           </div>
         </div>
       </main>

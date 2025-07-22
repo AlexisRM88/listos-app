@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckIcon } from './icons/CheckIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ClockIcon } from './icons/ClockIcon';
+import { getPricingConfig } from '../services/paymentService';
+import errorHandlingService, { ErrorType } from '../services/errorHandlingService';
 
 interface PricingModalProps {
   onClose: () => void;
@@ -21,13 +23,70 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   onRetry
 }) => {
   const [showDetailedBenefits, setShowDetailedBenefits] = useState(false);
+  const [pricingConfig, setPricingConfig] = useState<{
+    priceId: string;
+    amount: number;
+    currency: string;
+    interval: string;
+    product: {
+      name: string;
+      description: string;
+    };
+  } | null>(null);
+  const [loadingPricing, setLoadingPricing] = useState(false);
   const isSpanish = language === 'Español';
   
-  // Enhanced error categorization for better user experience
+  // Cargar configuración de precios desde el servidor con manejo de errores mejorado
+  useEffect(() => {
+    const loadPricingConfig = async () => {
+      setLoadingPricing(true);
+      try {
+        // Usar el servicio de manejo de errores con reintentos automáticos
+        const result = await errorHandlingService.withRetry(
+          async () => await getPricingConfig(),
+          { maxRetries: 2, initialDelayMs: 500 }
+        );
+        
+        if (result.success && result.config) {
+          setPricingConfig(result.config);
+        } else if (result.error) {
+          // Registrar el error formateado
+          const formattedError = errorHandlingService.formatError(result.error);
+          console.error('Error loading pricing configuration:', formattedError);
+        }
+      } catch (err) {
+        // Manejar cualquier error no capturado por getPricingConfig
+        const formattedError = errorHandlingService.formatError(err);
+        console.error('Error loading pricing configuration:', formattedError);
+      } finally {
+        setLoadingPricing(false);
+      }
+    };
+    
+    loadPricingConfig();
+  }, []);
+  
+  // Enhanced error categorization for better user experience using our error handling service
   const getErrorType = (errorMessage: string | null | undefined): 'network' | 'payment' | 'auth' | 'server' | 'generic' => {
     if (!errorMessage) return 'generic';
-    const msg = errorMessage.toLowerCase();
     
+    // Use our error handling service to determine the error type
+    if (errorHandlingService.isErrorOfType(errorMessage, ErrorType.NETWORK)) {
+      return 'network';
+    }
+    if (errorHandlingService.isErrorOfType(errorMessage, ErrorType.PAYMENT)) {
+      return 'payment';
+    }
+    if (errorHandlingService.isErrorOfType(errorMessage, ErrorType.AUTHENTICATION) || 
+        errorHandlingService.isErrorOfType(errorMessage, ErrorType.AUTHORIZATION)) {
+      return 'auth';
+    }
+    if (errorHandlingService.isErrorOfType(errorMessage, ErrorType.SERVER)) {
+      return 'server';
+    }
+    
+    // Fallback to the previous implementation for backward compatibility
+    const msg = errorMessage.toLowerCase();
     if (msg.includes('conexión') || msg.includes('connection') || msg.includes('network') || msg.includes('internet')) {
       return 'network';
     }
@@ -255,12 +314,33 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   {isSpanish ? 'Recomendado' : 'Recommended'}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-2">{T.proPlan}</h3>
+              <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-2">
+                {pricingConfig?.product?.name || T.proPlan}
+              </h3>
               <div className="flex items-baseline mb-1">
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">{T.proPrice}</p>
-                <span className="text-sm text-slate-500 ml-2">{T.proPeriod}</span>
+                {loadingPricing ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    <span className="text-slate-500">...</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                      {pricingConfig ? 
+                        `${pricingConfig.currency === 'usd' ? '$' : pricingConfig.currency}${(pricingConfig.amount / 100).toFixed(2)}` : 
+                        T.proPrice}
+                    </p>
+                    <span className="text-sm text-slate-500 ml-2">
+                      {pricingConfig ? 
+                        `/${pricingConfig.interval}` : 
+                        T.proPeriod}
+                    </span>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{T.proDesc}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                {pricingConfig?.product?.description || T.proDesc}
+              </p>
             </div>
           </div>
 

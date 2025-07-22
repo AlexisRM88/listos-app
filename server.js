@@ -56,11 +56,17 @@ databaseService.testConnection()
   })
   .catch(err => console.error('❌ Error al verificar conexión a la base de datos:', err));
 
+// Importar rutas de administración de suscripciones
+import adminSubscriptionRoutes from './routes/adminSubscriptionRoutes.js';
+import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes.js';
+
 // Rutas API
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminSubscriptionRoutes);
+app.use('/api/admin', adminAnalyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 
 // Ruta para verificar estado del servidor

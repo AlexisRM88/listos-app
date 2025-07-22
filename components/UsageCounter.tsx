@@ -13,12 +13,14 @@ interface UsageCounterProps {
   };
   language: string;
   onUpgrade?: () => void;
+  documentGenerated?: number; // Counter that increments when a document is generated
 }
 
 export const UsageCounter: React.FC<UsageCounterProps> = ({
   userProfile,
   language,
-  onUpgrade
+  onUpgrade,
+  documentGenerated = 0
 }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +69,7 @@ export const UsageCounter: React.FC<UsageCounterProps> = ({
           setError(result.error || T.errorLoading);
         }
       } catch (err) {
+        console.error('Error loading usage data:', err);
         setError(T.errorLoading);
       } finally {
         setIsLoading(false);
@@ -74,7 +77,34 @@ export const UsageCounter: React.FC<UsageCounterProps> = ({
     };
 
     loadUsageData();
+    
+    // Configurar intervalo para actualizar el uso cada minuto
+    // Esto es importante para mostrar datos actualizados después de generar documentos
+    const intervalId = setInterval(loadUsageData, 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, [userProfile?.idToken, T.errorLoading]);
+  
+  // Actualizar cuando se genera un nuevo documento
+  useEffect(() => {
+    if (documentGenerated > 0 && userProfile?.idToken) {
+      const updateAfterGeneration = async () => {
+        try {
+          const result = await subscriptionClientService.getSubscriptionStatus(userProfile.idToken);
+          if (result.success && result.data) {
+            setSubscriptionStatus(result.data);
+          }
+        } catch (err) {
+          console.error('Error updating usage after document generation:', err);
+          // No mostramos error aquí para no interrumpir la experiencia del usuario
+        }
+      };
+      
+      // Pequeño retraso para asegurar que el servidor ha procesado el nuevo documento
+      const timeoutId = setTimeout(updateAfterGeneration, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [documentGenerated, userProfile?.idToken]);
 
   // Mostrar loading
   if (isLoading) {
@@ -88,13 +118,40 @@ export const UsageCounter: React.FC<UsageCounterProps> = ({
     );
   }
 
-  // Mostrar error
+  // Mostrar error con opción de reintentar
   if (error) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="text-red-500">⚠️</div>
-          <span className="text-red-700 dark:text-red-300 text-sm">{error}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="text-red-500">⚠️</div>
+            <span className="text-red-700 dark:text-red-300 text-sm">{error}</span>
+          </div>
+          <button 
+            onClick={() => {
+              setIsLoading(true);
+              setError(null);
+              // Reintentar cargar los datos
+              setTimeout(async () => {
+                try {
+                  const result = await subscriptionClientService.getSubscriptionStatus(userProfile.idToken);
+                  if (result.success && result.data) {
+                    setSubscriptionStatus(result.data);
+                  } else {
+                    setError(result.error || T.errorLoading);
+                  }
+                } catch (err) {
+                  console.error('Error retrying usage data load:', err);
+                  setError(T.errorLoading);
+                } finally {
+                  setIsLoading(false);
+                }
+              }, 500);
+            }}
+            className="text-xs text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 underline"
+          >
+            {isSpanish ? 'Reintentar' : 'Retry'}
+          </button>
         </div>
       </div>
     );

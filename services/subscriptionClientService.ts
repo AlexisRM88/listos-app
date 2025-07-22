@@ -49,9 +49,13 @@ class SubscriptionClientService {
   /**
    * Obtiene el estado completo de suscripción del usuario
    * @param idToken Token de autenticación del usuario
+   * @param retryCount Número de reintentos (para uso interno)
    * @returns Estado de la suscripción
    */
-  async getSubscriptionStatus(idToken: string): Promise<{ success: boolean; data?: SubscriptionStatus; error?: string }> {
+  async getSubscriptionStatus(
+    idToken: string, 
+    retryCount = 0
+  ): Promise<{ success: boolean; data?: SubscriptionStatus; error?: string }> {
     try {
       const response = await fetch('/api/subscription/status', {
         method: 'GET',
@@ -62,8 +66,38 @@ class SubscriptionClientService {
       });
 
       if (!response.ok) {
+        // Manejar errores específicos según el código de estado
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+          };
+        }
+        
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' 
+          };
+        }
+        
+        if (response.status >= 500) {
+          // Reintentar automáticamente para errores del servidor (máximo 2 reintentos)
+          if (retryCount < 2) {
+            console.log(`Reintentando obtener estado de suscripción (intento ${retryCount + 1})...`);
+            // Esperar un tiempo exponencial antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return this.getSubscriptionStatus(idToken, retryCount + 1);
+          }
+          
+          return { 
+            success: false, 
+            error: 'Error del servidor. Por favor, intenta nuevamente más tarde.' 
+          };
+        }
+        
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        return { success: false, error: errorData.error };
+        return { success: false, error: errorData.error || `Error ${response.status}` };
       }
 
       const result = await response.json();
@@ -76,6 +110,15 @@ class SubscriptionClientService {
       return { success: true, data: result.data };
 
     } catch (error) {
+      // Detectar errores de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.' 
+        };
+      }
+      
+      console.error('Error obteniendo estado de suscripción:', error);
       return { 
         success: false, 
         error: 'Error al obtener el estado de la suscripción' 
@@ -86,9 +129,13 @@ class SubscriptionClientService {
   /**
    * Verifica si el usuario puede generar un documento
    * @param idToken Token de autenticación del usuario
+   * @param retryCount Número de reintentos (para uso interno)
    * @returns Resultado de la verificación
    */
-  async canGenerateDocument(idToken: string): Promise<{ success: boolean; data?: CanGenerateResult; error?: string }> {
+  async canGenerateDocument(
+    idToken: string, 
+    retryCount = 0
+  ): Promise<{ success: boolean; data?: CanGenerateResult; error?: string }> {
     try {
       const response = await fetch('/api/subscription/can-generate', {
         method: 'GET',
@@ -99,14 +146,53 @@ class SubscriptionClientService {
       });
 
       if (!response.ok) {
+        // Manejar errores específicos según el código de estado
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+          };
+        }
+        
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' 
+          };
+        }
+        
+        if (response.status >= 500) {
+          // Reintentar automáticamente para errores del servidor (máximo 2 reintentos)
+          if (retryCount < 2) {
+            console.log(`Reintentando verificar generación (intento ${retryCount + 1})...`);
+            // Esperar un tiempo exponencial antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return this.canGenerateDocument(idToken, retryCount + 1);
+          }
+          
+          return { 
+            success: false, 
+            error: 'Error del servidor. Por favor, intenta nuevamente más tarde.' 
+          };
+        }
+        
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        return { success: false, error: errorData.error };
+        return { success: false, error: errorData.error || `Error ${response.status}` };
       }
 
       const result = await response.json();
       return { success: true, data: result.data };
 
     } catch (error) {
+      // Detectar errores de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.' 
+        };
+      }
+      
+      console.error('Error verificando límites de generación:', error);
       return { 
         success: false, 
         error: 'Error al verificar los límites de generación' 
@@ -119,12 +205,14 @@ class SubscriptionClientService {
    * @param idToken Token de autenticación del usuario
    * @param documentType Tipo de documento generado
    * @param metadata Metadatos del documento
+   * @param retryCount Número de reintentos (para uso interno)
    * @returns Resultado del registro
    */
   async recordDocumentUsage(
     idToken: string,
     documentType: 'worksheet' | 'exam',
-    metadata: { subject?: string; grade?: string; language?: string } = {}
+    metadata: { subject?: string; grade?: string; language?: string } = {},
+    retryCount = 0
   ): Promise<UsageRecordResult> {
     try {
       const response = await fetch('/api/subscription/record-usage', {
@@ -142,8 +230,38 @@ class SubscriptionClientService {
       });
 
       if (!response.ok) {
+        // Manejar errores específicos según el código de estado
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+          };
+        }
+        
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' 
+          };
+        }
+        
+        if (response.status >= 500) {
+          // Reintentar automáticamente para errores del servidor (máximo 2 reintentos)
+          if (retryCount < 2) {
+            console.log(`Reintentando registrar uso (intento ${retryCount + 1})...`);
+            // Esperar un tiempo exponencial antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return this.recordDocumentUsage(idToken, documentType, metadata, retryCount + 1);
+          }
+          
+          return { 
+            success: false, 
+            error: 'Error del servidor. El documento se generó pero es posible que no se haya registrado correctamente.' 
+          };
+        }
+        
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        return { success: false, error: errorData.error };
+        return { success: false, error: errorData.error || `Error ${response.status}` };
       }
 
       const result = await response.json();
@@ -153,6 +271,15 @@ class SubscriptionClientService {
       };
 
     } catch (error) {
+      // Detectar errores de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.' 
+        };
+      }
+      
+      console.error('Error registrando uso de documento:', error);
       return { 
         success: false, 
         error: 'Error al registrar el uso del documento' 
@@ -163,9 +290,13 @@ class SubscriptionClientService {
   /**
    * Cancela la suscripción del usuario
    * @param idToken Token de autenticación del usuario
+   * @param retryCount Número de reintentos (para uso interno)
    * @returns Resultado de la cancelación
    */
-  async cancelSubscription(idToken: string): Promise<{ success: boolean; cancelAt?: Date; error?: string }> {
+  async cancelSubscription(
+    idToken: string, 
+    retryCount = 0
+  ): Promise<{ success: boolean; cancelAt?: Date; error?: string }> {
     try {
       const response = await fetch('/api/subscription/cancel', {
         method: 'POST',
@@ -176,8 +307,38 @@ class SubscriptionClientService {
       });
 
       if (!response.ok) {
+        // Manejar errores específicos según el código de estado
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+          };
+        }
+        
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' 
+          };
+        }
+        
+        if (response.status >= 500) {
+          // Reintentar automáticamente para errores del servidor (máximo 2 reintentos)
+          if (retryCount < 2) {
+            console.log(`Reintentando cancelar suscripción (intento ${retryCount + 1})...`);
+            // Esperar un tiempo exponencial antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return this.cancelSubscription(idToken, retryCount + 1);
+          }
+          
+          return { 
+            success: false, 
+            error: 'Error del servidor. Por favor, intenta nuevamente más tarde.' 
+          };
+        }
+        
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        return { success: false, error: errorData.error };
+        return { success: false, error: errorData.error || `Error ${response.status}` };
       }
 
       const result = await response.json();
@@ -187,6 +348,15 @@ class SubscriptionClientService {
       };
 
     } catch (error) {
+      // Detectar errores de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.' 
+        };
+      }
+      
+      console.error('Error cancelando suscripción:', error);
       return { 
         success: false, 
         error: 'Error al cancelar la suscripción' 
@@ -197,9 +367,13 @@ class SubscriptionClientService {
   /**
    * Reactiva una suscripción cancelada
    * @param idToken Token de autenticación del usuario
+   * @param retryCount Número de reintentos (para uso interno)
    * @returns Resultado de la reactivación
    */
-  async reactivateSubscription(idToken: string): Promise<{ success: boolean; error?: string }> {
+  async reactivateSubscription(
+    idToken: string,
+    retryCount = 0
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch('/api/subscription/reactivate', {
         method: 'POST',
@@ -210,13 +384,52 @@ class SubscriptionClientService {
       });
 
       if (!response.ok) {
+        // Manejar errores específicos según el código de estado
+        if (response.status === 401) {
+          return { 
+            success: false, 
+            error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+          };
+        }
+        
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Demasiadas solicitudes. Intenta nuevamente en unos momentos.' 
+          };
+        }
+        
+        if (response.status >= 500) {
+          // Reintentar automáticamente para errores del servidor (máximo 2 reintentos)
+          if (retryCount < 2) {
+            console.log(`Reintentando reactivar suscripción (intento ${retryCount + 1})...`);
+            // Esperar un tiempo exponencial antes de reintentar
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            return this.reactivateSubscription(idToken, retryCount + 1);
+          }
+          
+          return { 
+            success: false, 
+            error: 'Error del servidor. Por favor, intenta nuevamente más tarde.' 
+          };
+        }
+        
         const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        return { success: false, error: errorData.error };
+        return { success: false, error: errorData.error || `Error ${response.status}` };
       }
 
       return { success: true };
 
     } catch (error) {
+      // Detectar errores de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.' 
+        };
+      }
+      
+      console.error('Error reactivando suscripción:', error);
       return { 
         success: false, 
         error: 'Error al reactivar la suscripción' 
