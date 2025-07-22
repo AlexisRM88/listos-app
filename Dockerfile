@@ -7,14 +7,17 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci --only=production
+# Instalar todas las dependencias (incluyendo devDependencies para el build)
+RUN npm ci
 
 # Copiar el código fuente
 COPY . .
 
 # Construir la aplicación React
 RUN npm run build
+
+# Limpiar devDependencies después del build para reducir tamaño
+RUN npm prune --production
 
 # Exponer el puerto 8080 (estándar de Cloud Run)
 EXPOSE 8080
