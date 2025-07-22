@@ -115,6 +115,7 @@ app.get('/api/health', (req, res) => {
 
 // Health check endpoint for Cloud Run
 app.get('/health', (req, res) => {
+  console.log('🔍 Health check solicitado');
   res.status(200).send('OK');
 });
 
