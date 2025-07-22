@@ -63,7 +63,7 @@ vi.mock('../../../services/databaseService.js', () => ({
     updateSubscription: vi.fn(),
     createSubscription: vi.fn(),
     recordUsage: vi.fn()
-  }
+  };
 }));
 
 // Setup MSW server for API mocking
