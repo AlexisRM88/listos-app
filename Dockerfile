@@ -19,6 +19,11 @@ RUN npm run build
 # Limpiar devDependencies después del build para reducir tamaño
 RUN npm prune --production
 
+# Crear usuario no-root para seguridad
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
 # Exponer el puerto 8080 (estándar de Cloud Run)
 EXPOSE 8080
 
