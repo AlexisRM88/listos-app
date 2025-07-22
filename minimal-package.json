@@ -1,0 +1,12 @@
+{
+  "name": "listos-app-minimal",
+  "version": "1.0.0",
+  "description": "Versión mínima de ListosApp para Cloud Run",
+  "main": "minimal-server.js",
+  "scripts": {
+    "start": "node minimal-server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

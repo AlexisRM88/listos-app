@@ -1,0 +1,24 @@
+# Usar imagen base de Node.js con Debian (incluye bash)
+FROM node:18-slim
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY minimal-package.json ./package.json
+
+# Instalar dependencias
+RUN npm install --production
+
+# Copiar el código fuente
+COPY minimal-server.js ./server.js
+
+# Exponer el puerto 8080 (estándar de Cloud Run)
+EXPOSE 8080
+
+# Configurar variables de entorno
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Comando para iniciar la aplicación
+CMD ["node", "server.js"]
