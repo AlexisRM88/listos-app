@@ -28,10 +28,67 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Importar rutas
 const healthRoutes = require('./routes/health');
 const apiRoutes = require('./routes/api');
+let authRoutes, userRoutes, subscriptionRoutes;
 
-// Configurar rutas
+// Importar middleware de autenticación
+let authMiddleware;
+
+// Cargar rutas adicionales si están disponibles
+try {
+  authRoutes = require('./routes/auth');
+  logger.info('Rutas de autenticación cargadas');
+} catch (error) {
+  logger.warn('Rutas de autenticación no disponibles:', error.message);
+}
+
+try {
+  userRoutes = require('./routes/user');
+  logger.info('Rutas de usuario cargadas');
+} catch (error) {
+  logger.warn('Rutas de usuario no disponibles:', error.message);
+}
+
+try {
+  subscriptionRoutes = require('./routes/subscription');
+  logger.info('Rutas de suscripción cargadas');
+} catch (error) {
+  logger.warn('Rutas de suscripción no disponibles:', error.message);
+}
+
+try {
+  authMiddleware = require('./middleware/authMiddleware');
+  logger.info('Middleware de autenticación cargado');
+} catch (error) {
+  logger.warn('Middleware de autenticación no disponible:', error.message);
+}
+
+// Configurar rutas básicas
 app.use('/health', healthRoutes);
 app.use('/api', apiRoutes);
+
+// Configurar rutas adicionales si están disponibles
+if (authRoutes) {
+  app.use('/auth', authRoutes);
+}
+
+if (userRoutes && authMiddleware) {
+  // Proteger rutas de usuario con autenticación
+  app.use('/user', authMiddleware.authenticate, userRoutes);
+} else if (userRoutes) {
+  logger.warn('Rutas de usuario configuradas sin autenticación');
+  app.use('/user', userRoutes);
+}
+
+if (subscriptionRoutes && authMiddleware) {
+  // El webhook de Stripe no requiere autenticación
+  app.use('/subscription/webhook', subscriptionRoutes);
+  
+  // El resto de rutas de suscripción requieren autenticación
+  app.use('/subscription', authMiddleware.authenticate, subscriptionRoutes);
+} else if (subscriptionRoutes) {
+  logger.warn('Rutas de suscripción configuradas sin autenticación');
+  app.use('/subscription', subscriptionRoutes);
+}
 
 // Ruta principal
 app.get('/', (req, res) => {
