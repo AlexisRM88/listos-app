@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ListosApp</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ListosApp</h1>
+      <p class="subtitle">Plataforma de generación de contenido educativo</p>
+    </header>
+    
+    <main>
+      <section class="status-card">
+        <h2>Estado del Servidor</h2>
+        <div id="server-status">
+          <p><strong>Estado:</strong> <span class="status-badge online">Online</span></p>
+          <p><strong>Entorno:</strong> <span id="environment">Cargando...</span></p>
+          <p><strong>Versión:</strong> <span id="version">1.0.0</span></p>
+          <p><strong>Timestamp:</strong> <span id="timestamp">Cargando...</span></p>
+        </div>
+        <button id="check-status" class="btn primary">Verificar Estado</button>
+      </section>
+      
+      <section class="api-test">
+        <h2>Prueba de API</h2>
+        <div class="form-group">
+          <label for="echo-input">Mensaje:</label>
+          <input type="text" id="echo-input" placeholder="Escribe un mensaje...">
+          <button id="send-echo" class="btn secondary">Enviar</button>
+        </div>
+        <div class="response-container">
+          <h3>Respuesta:</h3>
+          <pre id="echo-response">// La respuesta aparecerá aquí</pre>
+        </div>
+      </section>
+    </main>
+    
+    <footer>
+      <p>&copy; 2025 ListosApp. Todos los derechos reservados.</p>
+    </footer>
+  </div>
+  
+  <script src="js/main.js"></script>
+</body>
+</html>
