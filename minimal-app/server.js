@@ -9,6 +9,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 
 // Importar configuración
 const config = require('./config');
@@ -130,9 +131,31 @@ if (subscriptionRoutes && authMiddleware) {
   app.use('/subscription', subscriptionRoutes);
 }
 
-// Ruta principal
+// Rutas principales
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Usar la versión mejorada si existe
+  const enhancedPath = path.join(__dirname, 'public', 'index-enhanced.html');
+  const originalPath = path.join(__dirname, 'public', 'index.html');
+  
+  try {
+    if (fs.existsSync(enhancedPath)) {
+      return res.sendFile(enhancedPath);
+    }
+    res.sendFile(originalPath);
+  } catch (error) {
+    logger.error('Error al servir página principal:', error);
+    res.status(500).send('Error interno del servidor');
+  }
+});
+
+// Ruta de dashboard
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// Ruta de login
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // Manejo de errores
