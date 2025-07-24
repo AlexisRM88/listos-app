@@ -25,6 +25,46 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Inicializar conexión a la base de datos
+let dbConnection;
+try {
+  dbConnection = require('./db/connection');
+  logger.info('Módulo de base de datos cargado');
+  
+  // Verificar conexión a la base de datos (no bloquear el startup)
+  dbConnection.testConnection()
+    .then(connected => {
+      if (connected) {
+        logger.info('Conexión a la base de datos establecida');
+        
+        // Ejecutar migraciones si es necesario
+        if (process.env.AUTO_MIGRATE === 'true') {
+          dbConnection.runMigrations()
+            .then(({ batchNo, log }) => {
+              if (log.length > 0) {
+                logger.info(`Migraciones aplicadas (batch ${batchNo})`);
+              }
+            })
+            .catch(err => logger.error('Error al ejecutar migraciones:', err));
+        }
+        
+        // Ejecutar seeds en desarrollo
+        if (process.env.NODE_ENV === 'development' && process.env.AUTO_SEED === 'true') {
+          dbConnection.runSeeds()
+            .catch(err => logger.error('Error al ejecutar seeds:', err));
+        }
+      } else {
+        logger.warn('No se pudo conectar a la base de datos - continuando sin DB');
+      }
+    })
+    .catch(err => {
+      logger.error('Error al verificar conexión a la base de datos:', err);
+      logger.warn('Continuando sin conexión a la base de datos');
+    });
+} catch (error) {
+  logger.warn('Módulo de base de datos no disponible:', error.message);
+}
+
 // Importar rutas
 const healthRoutes = require('./routes/health');
 const apiRoutes = require('./routes/api');

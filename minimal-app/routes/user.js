@@ -16,26 +16,52 @@ const logger = require('../utils/logger');
  */
 router.get('/profile', async (req, res, next) => {
   try {
-    // Por ahora simulamos datos del usuario
-    // En el futuro, esto vendrá de la base de datos
+    // Obtener ID del usuario autenticado
+    const userId = req.user.id;
     
+    // Importar modelos
+    const User = require('../models/User');
+    const Subscription = require('../models/Subscription');
+    
+    // Obtener datos del usuario
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+    
+    // Obtener suscripción activa
+    const subscription = await Subscription.getActiveSubscription(userId);
+    
+    // Construir perfil completo
     const userProfile = {
-      id: 'user_123',
-      email: 'usuario@ejemplo.com',
-      name: 'Usuario Ejemplo',
-      picture: 'https://via.placeholder.com/150',
-      role: 'user',
-      subscription: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      role: user.role,
+      worksheetCount: user.worksheet_count,
+      preferences: user.preferences,
+      subscription: subscription ? {
+        status: subscription.status,
+        plan: subscription.plan,
+        worksheetCount: user.worksheet_count,
+        maxWorksheets: subscription.worksheet_limit,
+        currentPeriodEnd: subscription.current_period_end,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end
+      } : {
         status: 'free',
         plan: 'free',
-        worksheetCount: 3,
+        worksheetCount: user.worksheet_count,
         maxWorksheets: 5
       },
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
+      createdAt: user.created_at,
+      lastLogin: user.last_login
     };
     
-    logger.debug('Perfil de usuario solicitado');
+    logger.debug(`Perfil de usuario solicitado: ${userId}`);
     
     res.json({
       success: true,
@@ -55,9 +81,11 @@ router.get('/profile', async (req, res, next) => {
  */
 router.put('/profile', async (req, res, next) => {
   try {
+    // Obtener ID del usuario autenticado
+    const userId = req.user.id;
     const { name, preferences } = req.body;
     
-    logger.debug('Actualizando perfil de usuario');
+    logger.debug(`Actualizando perfil de usuario: ${userId}`);
     
     // Validaciones básicas
     if (name && name.length < 2) {
@@ -66,23 +94,33 @@ router.put('/profile', async (req, res, next) => {
       });
     }
     
-    // Por ahora simulamos la actualización
-    // En el futuro, esto actualizará la base de datos
+    // Importar modelo
+    const User = require('../models/User');
     
-    const updatedProfile = {
-      id: 'user_123',
-      email: 'usuario@ejemplo.com',
-      name: name || 'Usuario Ejemplo',
-      picture: 'https://via.placeholder.com/150',
-      preferences: preferences || {},
-      updatedAt: new Date().toISOString()
-    };
+    // Actualizar perfil
+    const updatedUser = await User.updateProfile(userId, {
+      name,
+      preferences
+    });
     
-    logger.info('Perfil actualizado exitosamente');
+    if (!updatedUser) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+    
+    logger.info(`Perfil actualizado exitosamente: ${userId}`);
     
     res.json({
       success: true,
-      profile: updatedProfile,
+      profile: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        picture: updatedUser.picture,
+        preferences: updatedUser.preferences,
+        updatedAt: updatedUser.updated_at
+      },
       message: 'Perfil actualizado exitosamente'
     });
     
@@ -99,38 +137,39 @@ router.put('/profile', async (req, res, next) => {
  */
 router.get('/usage', async (req, res, next) => {
   try {
-    logger.debug('Estadísticas de uso solicitadas');
+    // Obtener ID del usuario autenticado
+    const userId = req.user.id;
     
-    // Por ahora simulamos datos de uso
-    // En el futuro, esto vendrá de la base de datos
+    logger.debug(`Estadísticas de uso solicitadas: ${userId}`);
     
+    // Importar modelos
+    const Usage = require('../models/Usage');
+    const Subscription = require('../models/Subscription');
+    
+    // Obtener estadísticas de uso
+    const stats = await Usage.getUserStats(userId);
+    
+    // Obtener suscripción activa
+    const subscription = await Subscription.getActiveSubscription(userId);
+    
+    // Calcular límites según suscripción
+    const worksheetLimit = subscription ? subscription.worksheet_limit : 5;
+    const remainingWorksheets = Math.max(0, worksheetLimit - stats.totalCount);
+    
+    // Construir respuesta
     const usageStats = {
       currentPeriod: {
-        worksheetsGenerated: 3,
-        maxWorksheets: 5,
-        remainingWorksheets: 2
+        worksheetsGenerated: stats.totalCount,
+        maxWorksheets: worksheetLimit,
+        remainingWorksheets: remainingWorksheets
       },
       allTime: {
-        totalWorksheets: 15,
-        totalSessions: 8,
-        favoriteSubjects: ['Matemáticas', 'Ciencias', 'Historia']
+        totalWorksheets: stats.totalCount,
+        favoriteSubjects: stats.bySubject.map(item => item.subject)
       },
-      recentActivity: [
-        {
-          id: 1,
-          type: 'worksheet_generated',
-          subject: 'Matemáticas',
-          grade: '5to grado',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 2,
-          type: 'worksheet_generated',
-          subject: 'Ciencias',
-          grade: '4to grado',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-        }
-      ]
+      byDocumentType: stats.byDocumentType,
+      byMonth: stats.byMonth,
+      recentActivity: stats.recentActivity
     };
     
     res.json({
@@ -151,6 +190,8 @@ router.get('/usage', async (req, res, next) => {
  */
 router.delete('/account', async (req, res, next) => {
   try {
+    // Obtener ID del usuario autenticado
+    const userId = req.user.id;
     const { confirmation } = req.body;
     
     if (confirmation !== 'DELETE_MY_ACCOUNT') {
@@ -159,10 +200,21 @@ router.delete('/account', async (req, res, next) => {
       });
     }
     
-    logger.warn('Solicitud de eliminación de cuenta');
+    logger.warn(`Solicitud de eliminación de cuenta: ${userId}`);
     
-    // Por ahora solo simulamos la eliminación
-    // En el futuro, esto eliminará todos los datos del usuario
+    // Importar modelo
+    const User = require('../models/User');
+    
+    // Eliminar cuenta
+    const deleted = await User.delete(userId);
+    
+    if (!deleted) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado'
+      });
+    }
+    
+    logger.info(`Cuenta eliminada exitosamente: ${userId}`);
     
     res.json({
       success: true,
