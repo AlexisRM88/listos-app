@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ListosApp - Generación de contenido educativo</title>
+  <link rel="stylesheet" href="css/styles-enhanced.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <a href="/" class="logo">
+        <span class="material-icons" style="font-size: 2rem; color: var(--primary-color);">school</span>
+        <h1>ListosApp</h1>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="#" class="active">Inicio</a></li>
+          <li><a href="#features">Características</a></li>
+          <li><a href="#pricing">Planes</a></li>
+          <li><a href="#api-test">API</a></li>
+          <li><a href="#" class="btn btn-primary btn-sm">Iniciar sesión</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Generación de contenido educativo con IA</h1>
+      <p>Crea hojas de trabajo, exámenes y material didáctico personalizado en segundos con nuestra plataforma impulsada por inteligencia artificial.</p>
+      <div class="hero-buttons">
+        <a href="#pricing" class="btn btn-secondary btn-lg">Ver planes</a>
+        <a href="#features" class="btn btn-outline btn-lg" style="background-color: transparent; border-color: white; color: white;">Conocer más</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="server-status" class="container">
+      <h2 class="text-center mb-4">Estado del servidor</h2>
+      <div class="card status-card slide-in-up">
+        <div class="card-header">
+          <h3>Información del sistema</h3>
+        </div>
+        <div class="card-body">
+          <p><strong>Estado:</strong> <span class="status-badge online">Online</span></p>
+          <p><strong>Entorno:</strong> <span id="environment">Cargando...</span></p>
+          <p><strong>Versión:</strong> <span id="version">1.0.0</span></p>
+          <p><strong>Timestamp:</strong> <span id="timestamp">Cargando...</span></p>
+        </div>
+        <div class="card-footer">
+          <button id="check-status" class="btn btn-primary">Verificar estado</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <div class="container">
+        <h2 class="text-center mb-4">Características principales</h2>
+        <div class="grid grid-3">
+          <div class="card feature-card fade-in">
+            <div class="feature-icon">
+              <span class="material-icons">auto_stories</span>
+            </div>
+            <h3>Hojas de trabajo personalizadas</h3>
+            <p>Genera hojas de trabajo adaptadas a cualquier materia, grado y nivel de dificultad con solo unos clics.</p>
+          </div>
+          <div class="card feature-card fade-in">
+            <div class="feature-icon">
+              <span class="material-icons">psychology</span>
+            </div>
+            <h3>IA avanzada</h3>
+            <p>Nuestra plataforma utiliza modelos de IA de última generación para crear contenido educativo de alta calidad.</p>
+          </div>
+          <div class="card feature-card fade-in">
+            <div class="feature-icon">
+              <span class="material-icons">cloud_done</span>
+            </div>
+            <h3>Sincronización en la nube</h3>
+            <p>Accede a tu contenido desde cualquier dispositivo y compártelo fácilmente con tus estudiantes o colegas.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing">
+      <div class="container">
+        <h2 class="text-center mb-4">Planes y precios</h2>
+        <div class="grid grid-3">
+          <div class="card pricing-card">
+            <h3>Plan Básico</h3>
+            <div class="price">$9.99 <span>/mes</span></div>
+            <p>Perfecto para comenzar</p>
+            <ul class="features-list">
+              <li>5 hojas de trabajo por mes</li>
+              <li>Acceso a plantillas básicas</li>
+              <li>Soporte por email</li>
+              <li>Exportación en PDF</li>
+            </ul>
+            <button class="btn btn-outline btn-block">Seleccionar</button>
+          </div>
+          <div class="card pricing-card popular">
+            <div class="popular-badge">Popular</div>
+            <h3>Plan Profesional</h3>
+            <div class="price">$19.99 <span>/mes</span></div>
+            <p>Para educadores dedicados</p>
+            <ul class="features-list">
+              <li>20 hojas de trabajo por mes</li>
+              <li>Todas las plantillas</li>
+              <li>Soporte prioritario</li>
+              <li>Personalización avanzada</li>
+              <li>Exportación en múltiples formatos</li>
+            </ul>
+            <button class="btn btn-primary btn-block">Seleccionar</button>
+          </div>
+          <div class="card pricing-card">
+            <h3>Plan Ilimitado</h3>
+            <div class="price">$39.99 <span>/mes</span></div>
+            <p>Sin restricciones</p>
+            <ul class="features-list">
+              <li>Hojas de trabajo ilimitadas</li>
+              <li>Todas las funciones</li>
+              <li>Soporte prioritario</li>
+              <li>Personalización avanzada</li>
+              <li>Análisis detallado</li>
+              <li>API para integraciones</li>
+            </ul>
+            <button class="btn btn-outline btn-block">Seleccionar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="api-test" class="container mt-5">
+      <h2 class="text-center mb-4">Prueba nuestra API</h2>
+      <div class="api-test">
+        <div class="form-group">
+          <label for="echo-input">Mensaje:</label>
+          <input type="text" id="echo-input" placeholder="Escribe un mensaje...">
+          <button id="send-echo" class="btn btn-secondary mt-2">Enviar</button>
+        </div>
+        <div class="response-container">
+          <h3>Respuesta:</h3>
+          <pre id="echo-response">// La respuesta aparecerá aquí</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="container mt-5">
+      <h2 class="text-center mb-4">¿Listo para comenzar?</h2>
+      <div class="text-center">
+        <p class="mb-4">Únete a miles de educadores que ya están utilizando ListosApp para crear contenido educativo de calidad.</p>
+        <a href="#pricing" class="btn btn-primary btn-lg">Comenzar ahora</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-links">
+        <a href="#">Inicio</a>
+        <a href="#">Características</a>
+        <a href="#">Planes</a>
+        <a href="#">API</a>
+        <a href="#">Contacto</a>
+        <a href="#">Términos</a>
+        <a href="#">Privacidad</a>
+      </div>
+      <p>&copy; 2025 ListosApp. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elementos del DOM
+      const environmentEl = document.getElementById('environment');
+      const timestampEl = document.getElementById('timestamp');
+      const checkStatusBtn = document.getElementById('check-status');
+      const echoInput = document.getElementById('echo-input');
+      const sendEchoBtn = document.getElementById('send-echo');
+      const echoResponse = document.getElementById('echo-response');
+      
+      // Actualizar timestamp
+      timestampEl.textContent = new Date().toLocaleString();
+      
+      // Cargar estado inicial
+      fetchStatus();
+      
+      // Event listeners
+      checkStatusBtn.addEventListener('click', fetchStatus);
+      sendEchoBtn.addEventListener('click', sendEcho);
+      
+      /**
+       * Obtener estado del servidor
+       */
+      async function fetchStatus() {
+        try {
+          checkStatusBtn.disabled = true;
+          checkStatusBtn.textContent = 'Verificando...';
+          
+          const response = await fetch('/api/status');
+          const data = await response.json();
+          
+          // Actualizar UI
+          environmentEl.textContent = data.environment;
+          timestampEl.textContent = new Date(data.timestamp).toLocaleString();
+          
+          // Mostrar notificación
+          showNotification('Estado actualizado correctamente', 'success');
+        } catch (error) {
+          console.error('Error al obtener estado:', error);
+          showNotification('Error al obtener estado del servidor', 'error');
+          
+          // Actualizar UI para mostrar error
+          const statusBadge = document.querySelector('.status-badge');
+          statusBadge.textContent = 'Offline';
+          statusBadge.classList.remove('online');
+          statusBadge.classList.add('offline');
+        } finally {
+          checkStatusBtn.disabled = false;
+          checkStatusBtn.textContent = 'Verificar estado';
+        }
+      }
+      
+      /**
+       * Enviar mensaje de echo
+       */
+      async function sendEcho() {
+        try {
+          const message = echoInput.value.trim();
+          
+          if (!message) {
+            showNotification('Por favor ingresa un mensaje', 'warning');
+            return;
+          }
+          
+          sendEchoBtn.disabled = true;
+          sendEchoBtn.textContent = 'Enviando...';
+          
+          const response = await fetch('/api/echo', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message })
+          });
+          
+          const data = await response.json();
+          
+          // Mostrar respuesta
+          echoResponse.textContent = JSON.stringify(data, null, 2);
+          
+          // Mostrar notificación
+          showNotification('Mensaje enviado correctamente', 'success');
+        } catch (error) {
+          console.error('Error al enviar mensaje:', error);
+          echoResponse.textContent = `Error: ${error.message}`;
+          showNotification('Error al enviar mensaje', 'error');
+        } finally {
+          sendEchoBtn.disabled = false;
+          sendEchoBtn.textContent = 'Enviar';
+        }
+      }
+      
+      /**
+       * Mostrar notificación
+       * @param {string} message - Mensaje a mostrar
+       * @param {string} type - Tipo de notificación (success, error, warning)
+       */
+      function showNotification(message, type = 'info') {
+        // Eliminar notificaciones existentes
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+          document.body.removeChild(notification);
+        });
+        
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Agregar al DOM
+        document.body.appendChild(notification);
+        
+        // Mostrar con animación
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 10);
+        
+        // Eliminar después de 3 segundos
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+      
+      // Animaciones al hacer scroll
+      const animateOnScroll = () => {
+        const elements = document.querySelectorAll('.fade-in, .slide-in-up');
+        
+        elements.forEach(element => {
+          const elementTop = element.getBoundingClientRect().top;
+          const elementVisible = 150;
+          
+          if (elementTop < window.innerHeight - elementVisible) {
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0)';
+          }
+        });
+      };
+      
+      // Inicializar animaciones
+      window.addEventListener('scroll', animateOnScroll);
+      animateOnScroll();
+    });
+  </script>
+</body>
+</html>

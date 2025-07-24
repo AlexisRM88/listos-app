@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - ListosApp</title>
+  <link rel="stylesheet" href="css/styles-enhanced.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <a href="/" class="logo">
+        <span class="material-icons" style="font-size: 2rem; color: var(--primary-color);">school</span>
+        <h1>ListosApp</h1>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index-enhanced.html">Inicio</a></li>
+          <li><a href="#" class="active">Dashboard</a></li>
+          <li><a href="#" class="btn btn-outline btn-sm">
+            <span class="material-icons" style="font-size: 1rem; vertical-align: middle; margin-right: 4px;">account_circle</span>
+            Mi cuenta
+          </a></li>
+          <li><a href="#" class="btn btn-secondary btn-sm">Cerrar sesión</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="dashboard">
+        <div class="sidebar">
+          <h3>Menú</h3>
+          <ul class="sidebar-menu">
+            <li>
+              <a href="#" class="active">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">dashboard</span>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">description</span>
+                Mis documentos
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">favorite</span>
+                Favoritos
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">history</span>
+                Historial
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">credit_card</span>
+                Suscripción
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 8px;">settings</span>
+                Configuración
+              </a>
+            </li>
+          </ul>
+          
+          <h3 class="mt-4">Suscripción</h3>
+          <div class="p-2">
+            <p><strong>Plan:</strong> Profesional</p>
+            <p><strong>Estado:</strong> <span class="status-badge online">Activo</span></p>
+            <p><strong>Renovación:</strong> 15/08/2025</p>
+            <div class="mt-2">
+              <div style="height: 8px; background-color: #eee; border-radius: 4px; overflow: hidden;">
+                <div style="width: 65%; height: 100%; background-color: var(--primary-color);"></div>
+              </div>
+              <p class="text-muted mt-1">13/20 hojas de trabajo usadas</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-content">
+          <h2>Dashboard</h2>
+          <p class="text-muted">Bienvenido de nuevo, Usuario. Aquí tienes un resumen de tu actividad.</p>
+          
+          <div class="stats-grid mt-3">
+            <div class="stat-card">
+              <div class="stat-value">13</div>
+              <div class="stat-label">Hojas de trabajo creadas</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">7</div>
+              <div class="stat-label">Hojas restantes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">5</div>
+              <div class="stat-label">Documentos favoritos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">24</div>
+              <div class="stat-label">Días restantes</div>
+            </div>
+          </div>
+          
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>Actividad reciente</h3>
+            </div>
+            <div class="card-body">
+              <canvas id="activityChart" height="100"></canvas>
+            </div>
+          </div>
+          
+          <div class="grid grid-2 mt-4">
+            <div class="card">
+              <div class="card-header">
+                <h3>Documentos por materia</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="subjectsChart" height="200"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3>Documentos recientes</h3>
+              </div>
+              <div class="card-body">
+                <ul style="list-style: none;">
+                  <li class="d-flex justify-content-between align-items-center p-2" style="border-bottom: 1px solid var(--border-color);">
+                    <div>
+                      <strong>Matemáticas - Fracciones</strong>
+                      <div class="text-muted">5to grado • 22/07/2025</div>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-outline">Ver</button>
+                    </div>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-center p-2" style="border-bottom: 1px solid var(--border-color);">
+                    <div>
+                      <strong>Ciencias - El sistema solar</strong>
+                      <div class="text-muted">4to grado • 20/07/2025</div>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-outline">Ver</button>
+                    </div>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-center p-2" style="border-bottom: 1px solid var(--border-color);">
+                    <div>
+                      <strong>Historia - Civilizaciones antiguas</strong>
+                      <div class="text-muted">6to grado • 18/07/2025</div>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-outline">Ver</button>
+                    </div>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-center p-2">
+                    <div>
+                      <strong>Lenguaje - Verbos irregulares</strong>
+                      <div class="text-muted">5to grado • 15/07/2025</div>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-outline">Ver</button>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="card-footer">
+                <a href="#" class="btn btn-sm btn-primary">Ver todos</a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>Crear nuevo documento</h3>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-3">
+                <div class="form-group">
+                  <label for="document-type">Tipo de documento</label>
+                  <select id="document-type" class="w-100">
+                    <option value="worksheet">Hoja de trabajo</option>
+                    <option value="quiz">Examen</option>
+                    <option value="flashcards">Tarjetas de estudio</option>
+                    <option value="lesson">Plan de lección</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="subject">Materia</label>
+                  <select id="subject" class="w-100">
+                    <option value="math">Matemáticas</option>
+                    <option value="science">Ciencias</option>
+                    <option value="history">Historia</option>
+                    <option value="language">Lenguaje</option>
+                    <option value="art">Arte</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="grade">Grado</label>
+                  <select id="grade" class="w-100">
+                    <option value="1">1er grado</option>
+                    <option value="2">2do grado</option>
+                    <option value="3">3er grado</option>
+                    <option value="4">4to grado</option>
+                    <option value="5">5to grado</option>
+                    <option value="6">6to grado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group mt-3">
+                <label for="topic">Tema específico</label>
+                <input type="text" id="topic" placeholder="Ej: Fracciones, Sistema solar, Verbos irregulares...">
+              </div>
+              <div class="form-group mt-3">
+                <label for="instructions">Instrucciones adicionales (opcional)</label>
+                <textarea id="instructions" rows="3" placeholder="Instrucciones específicas para personalizar el contenido..."></textarea>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn btn-primary">Generar documento</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-links">
+        <a href="#">Inicio</a>
+        <a href="#">Características</a>
+        <a href="#">Planes</a>
+        <a href="#">API</a>
+        <a href="#">Contacto</a>
+        <a href="#">Términos</a>
+        <a href="#">Privacidad</a>
+      </div>
+      <p>&copy; 2025 ListosApp. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Gráfico de actividad
+      const activityCtx = document.getElementById('activityChart').getContext('2d');
+      const activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+          labels: ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+          datasets: [{
+            label: 'Documentos generados',
+            data: [5, 8, 13, 17, 12, 9, 13],
+            backgroundColor: 'rgba(66, 133, 244, 0.2)',
+            borderColor: 'rgba(66, 133, 244, 1)',
+            borderWidth: 2,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(66, 133, 244, 1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+      
+      // Gráfico de materias
+      const subjectsCtx = document.getElementById('subjectsChart').getContext('2d');
+      const subjectsChart = new Chart(subjectsCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Matemáticas', 'Ciencias', 'Historia', 'Lenguaje', 'Arte'],
+          datasets: [{
+            data: [35, 25, 20, 15, 5],
+            backgroundColor: [
+              'rgba(66, 133, 244, 0.7)',
+              'rgba(52, 168, 83, 0.7)',
+              'rgba(251, 188, 5, 0.7)',
+              'rgba(234, 67, 53, 0.7)',
+              'rgba(103, 58, 183, 0.7)'
+            ],
+            borderColor: [
+              'rgba(66, 133, 244, 1)',
+              'rgba(52, 168, 83, 1)',
+              'rgba(251, 188, 5, 1)',
+              'rgba(234, 67, 53, 1)',
+              'rgba(103, 58, 183, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+      
+      // Función para mostrar notificaciones
+      function showNotification(message, type = 'info') {
+        // Eliminar notificaciones existentes
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+          document.body.removeChild(notification);
+        });
+        
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Agregar al DOM
+        document.body.appendChild(notification);
+        
+        // Mostrar con animación
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 10);
+        
+        // Eliminar después de 3 segundos
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+      
+      // Ejemplo de uso de notificación
+      document.querySelector('.btn-primary').addEventListener('click', () => {
+        showNotification('Generando documento...', 'info');
+      });
+    });
+  </script>
+</body>
+</html>

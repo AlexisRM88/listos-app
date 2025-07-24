@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión - ListosApp</title>
+  <link rel="stylesheet" href="css/styles-enhanced.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <style>
+    body {
+      background-color: var(--light-bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    .login-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: var(--spacing-lg);
+    }
+    
+    .login-card {
+      background-color: white;
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 400px;
+      padding: var(--spacing-xl);
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .login-logo {
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .login-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    
+    .login-divider {
+      display: flex;
+      align-items: center;
+      margin: var(--spacing-md) 0;
+      color: var(--text-secondary);
+    }
+    
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .login-divider span {
+      padding: 0 var(--spacing-sm);
+    }
+    
+    .btn-google {
+      background-color: white;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .btn-google:hover {
+      background-color: var(--light-bg);
+    }
+    
+    .login-footer {
+      text-align: center;
+      margin-top: var(--spacing-lg);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <a href="/" class="logo">
+        <img src="img/logo.svg" alt="ListosApp Logo" height="40">
+      </a>
+      <nav>
+        <ul>
+          <li><a href="index-enhanced.html">Inicio</a></li>
+          <li><a href="index-enhanced.html#features">Características</a></li>
+          <li><a href="index-enhanced.html#pricing">Planes</a></li>
+          <li><a href="#" class="active">Iniciar sesión</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <img src="img/logo.svg" alt="ListosApp Logo" height="50">
+        </div>
+        <h2>Iniciar sesión</h2>
+        <p class="text-muted">Accede a tu cuenta para continuar</p>
+      </div>
+      
+      <div class="login-options">
+        <button class="btn btn-google">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" height="18">
+          <span>Continuar con Google</span>
+        </button>
+        
+        <div class="login-divider">
+          <span>o</span>
+        </div>
+        
+        <form>
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" placeholder="tu@email.com" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <label>
+              <input type="checkbox"> Recordarme
+            </label>
+            <a href="#" class="text-primary">¿Olvidaste tu contraseña?</a>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+        </form>
+      </div>
+      
+      <div class="login-footer">
+        <p>¿No tienes una cuenta? <a href="#" class="text-primary">Regístrate</a></p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-links">
+        <a href="#">Inicio</a>
+        <a href="#">Características</a>
+        <a href="#">Planes</a>
+        <a href="#">API</a>
+        <a href="#">Contacto</a>
+        <a href="#">Términos</a>
+        <a href="#">Privacidad</a>
+      </div>
+      <p>&copy; 2025 ListosApp. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Simulación de inicio de sesión
+      const form = document.querySelector('form');
+      const googleBtn = document.querySelector('.btn-google');
+      
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        if (!email || !password) {
+          showNotification('Por favor completa todos los campos', 'warning');
+          return;
+        }
+        
+        // Simulación de inicio de sesión
+        showNotification('Iniciando sesión...', 'info');
+        
+        // Redireccionar después de un breve retraso
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+      });
+      
+      googleBtn.addEventListener('click', () => {
+        showNotification('Iniciando sesión con Google...', 'info');
+        
+        // Redireccionar después de un breve retraso
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+      });
+      
+      /**
+       * Mostrar notificación
+       * @param {string} message - Mensaje a mostrar
+       * @param {string} type - Tipo de notificación (success, error, warning)
+       */
+      function showNotification(message, type = 'info') {
+        // Eliminar notificaciones existentes
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+          document.body.removeChild(notification);
+        });
+        
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Agregar al DOM
+        document.body.appendChild(notification);
+        
+        // Mostrar con animación
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 10);
+        
+        // Eliminar después de 3 segundos
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            if (document.body.contains(notification)) {
+              document.body.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+    });
+  </script>
+</body>
+</html>

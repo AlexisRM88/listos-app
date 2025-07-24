@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <style>
+    .logo-text { font-family: 'Google Sans', Arial, sans-serif; font-weight: 700; font-size: 32px; }
+    .primary { fill: #4285f4; }
+    .secondary { fill: #34a853; }
+    .accent { fill: #ea4335; }
+  </style>
+  <g transform="translate(10, 35)">
+    <path class="primary" d="M0,0 L8,0 L8,-25 L0,-25 Z M12,0 L20,0 L20,-15 C20,-18 22,-20 25,-20 C28,-20 30,-18 30,-15 L30,0 L38,0 L38,-17 C38,-23 34,-27 28,-27 C24,-27 21,-25 20,-22 L20,-25 L12,-25 Z" />
+    <text x="45" y="0" class="logo-text primary">Listos</text>
+    <text x="125" y="0" class="logo-text accent">App</text>
+    <path class="secondary" d="M180,-12 C180,-18 175,-23 169,-23 C163,-23 158,-18 158,-12 C158,-6 163,-1 169,-1 C175,-1 180,-6 180,-12 Z M174,-12 C174,-8 172,-6 169,-6 C166,-6 164,-8 164,-12 C164,-16 166,-18 169,-18 C172,-18 174,-16 174,-12 Z" />
+  </g>
+</svg>
